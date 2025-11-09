@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: money-manager-backend
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn codefinance:app
+    envVars:
+      - key: FLASK_SECRET_KEY
+        generateValue: true
+      - key: TRANSACTIONS_FILE
+        value: transactions.csv
+      - key: FLASK_HOST
+        value: 0.0.0.0
+      - key: FLASK_PORT
+        value: 10000
+      - key: PYTHON_VERSION
+        value: 3.13.7
+
+  - type: web
+    name: money-manager-frontend
+    env: node
+    buildCommand: npm install && npm run build
+    startCommand: npm run preview
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          name: money-manager-backend
+          type: web
+          property: host

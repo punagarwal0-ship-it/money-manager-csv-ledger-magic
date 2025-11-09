@@ -1,11 +1,13 @@
 import csv
 import os
 import datetime
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
+from flask_cors import CORS
 
 FILE_NAME = os.getenv('TRANSACTIONS_FILE', 'transactions.csv')
 
 app = Flask(__name__)
+CORS(app)
 app.secret_key = os.getenv('FLASK_SECRET_KEY', os.urandom(24))  # Use environment variable or generate secure key
 
 
@@ -62,10 +64,22 @@ def get_transaction_by_id(tid):
     return None
 
 
-@app.route('/')
-def index():
+@app.route('/api/transactions')
+def get_transactions():
     rows = read_all_transactions()
-    return render_template('index.html', transactions=rows)
+    transactions = []
+    for row in rows:
+        if row:
+            transactions.append({
+                'id': row[0],
+                'date': row[1],
+                'type': row[2],
+                'category': row[3],
+                'amount': float(row[4]),
+                'paymentMethod': row[5],
+                'description': row[6]
+            })
+    return jsonify(transactions)
 
 
 @app.route('/add', methods=['GET', 'POST'])
