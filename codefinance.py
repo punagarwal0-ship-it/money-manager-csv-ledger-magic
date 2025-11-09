@@ -82,6 +82,12 @@ def get_transactions():
     return jsonify(transactions)
 
 
+@app.route('/')
+def health():
+    """Health check endpoint for Render and other platforms."""
+    return jsonify({"status": "ok"}), 200
+
+
 @app.route('/add', methods=['GET', 'POST'])
 def add():
     if request.method == 'POST':
