@@ -1,17 +1,24 @@
 services:
   - type: web
-    name: money-manager-api
+    name: money-manager
     env: python
     region: singapore
     plan: free
     buildCommand: |
+      # Install and setup Node.js first
+      curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+      apt-get install -y nodejs
+      npm install
+      npm run build
+      # Then setup Python
       python -m pip install --upgrade pip
       pip install -r requirements.txt
-  # Bind to the port Render provides via the $PORT env var
-  startCommand: gunicorn -b 0.0.0.0:$PORT codefinance:app
+    startCommand: gunicorn -b 0.0.0.0:$PORT codefinance:app
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.4
+      - key: NODE_VERSION
+        value: 18.x
       - key: FLASK_SECRET_KEY
         generateValue: true
       - key: TRANSACTIONS_FILE
@@ -21,21 +28,3 @@ services:
       - key: FLASK_APP
         value: codefinance.py
     healthCheckPath: /api/transactions
-
-  - type: web
-    name: money-manager-web
-    env: node
-    region: singapore
-    plan: free
-    buildCommand: npm install && npm run build
-    startCommand: npm run preview
-    envVars:
-      - key: NODE_VERSION
-        value: 18.x
-      - key: VITE_API_URL
-        fromService:
-          name: money-manager-api
-          type: web
-          envVarKey: RENDER_EXTERNAL_URL
-    dependencies:
-      - name: money-manager-api

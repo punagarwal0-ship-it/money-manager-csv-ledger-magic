@@ -1,7 +1,7 @@
 import csv
 import os
 import datetime
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, send_from_directory
 from flask_cors import CORS
 
 FILE_NAME = os.getenv('TRANSACTIONS_FILE', 'transactions.csv')
@@ -82,10 +82,17 @@ def get_transactions():
     return jsonify(transactions)
 
 
-@app.route('/')
-def health():
-    """Health check endpoint for Render and other platforms."""
-    return jsonify({"status": "ok"}), 200
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def serve(path):
+    """Serve the frontend files and fallback to index.html for SPA routing."""
+    try:
+        if path and os.path.exists(os.path.join(app.root_path, "dist", path)):
+            return send_from_directory(os.path.join(app.root_path, "dist"), path)
+        return send_from_directory(os.path.join(app.root_path, "dist"), 'index.html')
+    except Exception as e:
+        app.logger.error(f"Error serving path {path}: {str(e)}")
+        return jsonify({"error": str(e), "path": path, "dist_exists": os.path.exists(os.path.join(app.root_path, "dist"))}), 500
 
 
 @app.route('/add', methods=['GET', 'POST'])
