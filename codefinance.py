@@ -6,9 +6,13 @@ from flask_cors import CORS
 
 FILE_NAME = os.getenv('TRANSACTIONS_FILE', 'transactions.csv')
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='dist', static_url_path='')
 CORS(app)
 app.secret_key = os.getenv('FLASK_SECRET_KEY', os.urandom(24))  # Use environment variable or generate secure key
+
+# Configure logging
+import logging
+logging.basicConfig(level=logging.INFO)
 
 
 def ensure_csv():
@@ -87,12 +91,41 @@ def get_transactions():
 def serve(path):
     """Serve the frontend files and fallback to index.html for SPA routing."""
     try:
-        if path and os.path.exists(os.path.join(app.root_path, "dist", path)):
-            return send_from_directory(os.path.join(app.root_path, "dist"), path)
-        return send_from_directory(os.path.join(app.root_path, "dist"), 'index.html')
+        dist_path = os.path.join(os.getcwd(), 'dist')
+        app.logger.info(f"Serving path: {path}")
+        app.logger.info(f"Current working directory: {os.getcwd()}")
+        app.logger.info(f"Dist path exists: {os.path.exists(dist_path)}")
+        
+        if path:
+            file_path = os.path.join(dist_path, path)
+            app.logger.info(f"Looking for file: {file_path}")
+            if os.path.exists(file_path):
+                return send_from_directory(dist_path, path)
+        
+        index_path = os.path.join(dist_path, 'index.html')
+        app.logger.info(f"Falling back to index.html: {index_path}")
+        app.logger.info(f"index.html exists: {os.path.exists(index_path)}")
+        
+        if os.path.exists(index_path):
+            return send_from_directory(dist_path, 'index.html')
+        
+        return jsonify({
+            "error": "File not found",
+            "path": path,
+            "cwd": os.getcwd(),
+            "dist_exists": os.path.exists(dist_path),
+            "requested_file": file_path if path else None,
+            "index_exists": os.path.exists(index_path)
+        }), 404
     except Exception as e:
         app.logger.error(f"Error serving path {path}: {str(e)}")
-        return jsonify({"error": str(e), "path": path, "dist_exists": os.path.exists(os.path.join(app.root_path, "dist"))}), 500
+        return jsonify({
+            "error": str(e),
+            "type": type(e).__name__,
+            "path": path,
+            "cwd": os.getcwd(),
+            "dist_exists": os.path.exists(dist_path)
+        }), 500
 
 
 @app.route('/add', methods=['GET', 'POST'])

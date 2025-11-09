@@ -8,11 +8,24 @@ services:
       # Install and setup Node.js first
       curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
       apt-get install -y nodejs
+      
+      # Build the frontend
+      echo "Installing npm packages..."
       npm install
+      echo "Building frontend..."
       npm run build
-      # Then setup Python
+      echo "Frontend build complete. Contents of dist:"
+      ls -la dist/
+      
+      # Setup Python
+      echo "Setting up Python..."
       python -m pip install --upgrade pip
       pip install -r requirements.txt
+      
+      # Ensure dist directory is in the right place
+      echo "Final check of dist directory:"
+      pwd
+      ls -la dist/
     startCommand: gunicorn -b 0.0.0.0:$PORT codefinance:app
     envVars:
       - key: PYTHON_VERSION
