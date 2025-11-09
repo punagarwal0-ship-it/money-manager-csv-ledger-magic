@@ -7,7 +7,8 @@ services:
     buildCommand: |
       python -m pip install --upgrade pip
       pip install -r requirements.txt
-    startCommand: gunicorn codefinance:app
+  # Bind to the port Render provides via the $PORT env var
+  startCommand: gunicorn -b 0.0.0.0:$PORT codefinance:app
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.4
